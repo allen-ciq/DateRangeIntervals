@@ -39,14 +39,14 @@ function DateRangeIntervals(start, end, interval){
 	}[interval];
 
 	const advanceByInterval = {
-		'second': () => curDate.setSeconds(curDate.getSeconds() + 1),
-		'minute': () => curDate.setMinutes(curDate.getMinutes() + 1),
-		'hour': () => curDate.setHours(curDate.getHours() + 1),
-		'day': () => curDate.setDate(curDate.getDate() + 1),
-		'week': () => curDate.setDate(curDate.getDate() + 7),
-		'month': () => curDate.setMonth(curDate.getMonth() + 1),
-		'quarter': () => curDate.setMonth(curDate.getMonth() + 3),
-		'year': () => curDate.setFullYear(curDate.getFullYear() + 1)
+		'second': () => curDate.setUTCSeconds(curDate.getUTCSeconds() + 1),
+		'minute': () => curDate.setUTCMinutes(curDate.getUTCMinutes() + 1),
+		'hour': () => curDate.setUTCHours(curDate.getUTCHours() + 1),
+		'day': () => curDate.setUTCDate(curDate.getUTCDate() + 1),
+		'week': () => curDate.setUTCDate(curDate.getUTCDate() + 7),
+		'month': () => curDate.setUTCMonth(curDate.getUTCMonth() + 1),
+		'quarter': () => curDate.setUTCMonth(curDate.getUTCMonth() + 3),
+		'year': () => curDate.setUTCFullYear(curDate.getUTCFullYear() + 1)
 	}[interval];
 
 	if(!advanceByInterval){
@@ -124,8 +124,8 @@ function DateRangeIntervals(start, end, interval){
 					throw new Error('Invalid visitor: accepts only DateRangeIntervalVisitor');
 				}
 				for(const [start, end] of this){
-					logger.debug(`visiting ${start} - ${end}`);
-					const subdivide = visitor.visit(this);
+					logger.debug(`visiting ${start.toISOString()} - ${end.toISOString()}`);
+					const subdivide = await visitor.visit(this);
 					if(subdivide && visitor.subIntervals && lowerInterval){
 						logger.debug(`recursing lower for subinterval: ${lowerInterval} (${start}, ${end})`);
 						visitor.depth++;
@@ -143,15 +143,6 @@ function DateRangeIntervalVisitor(fn){
 		return new DateRangeIntervalVisitor(...arguments);
 	}
 
-	// https://regex101.com/r/G1RkLc/1
-	// fn.toString().replace(/\s*(?:function)?\s*\w*\((.*)\)\s*(?:=>)?\s*{/, (_m, br) => {
-	// 	// https://regex101.com/r/MN54OZ/1
-	// 	if(!br.test(/^\s*start,\s*end,\s*interval\s*$/)){
-	// 		throw new Error('Invalid signature');
-	// 	}
-	// });
-
-	// let shouldSubdivide = false;
 	Object.defineProperties(this, {
 		depth: {
 			value: 0,
@@ -160,12 +151,6 @@ function DateRangeIntervalVisitor(fn){
 		subIntervals: {
 			value: false,
 			writable: true
-			// get: function(){
-			// 	return shouldSubdivide;
-			// },
-			// set: function(newVal){
-			// 	shouldSubdivide = !!newVal;
-			// }
 		},
 		visit: {
 			value: fn
