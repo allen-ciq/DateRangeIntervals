@@ -1,9 +1,17 @@
-// should bundle and link bundled index
-// import Logger from 'log-ng';
-const Logger = require('log-ng');
-const path = require('path');
-
-const logger = new Logger(path.basename(__filename));
+let logger;
+if(typeof process !== 'undefined' && process?.versions?.node){
+	console.log('Node.js environment detected');
+	try{
+		const path = require('path');
+		const Logger = require('log-ng');
+		logger = new Logger(path.basename(__filename));
+	}catch(err){
+		console.error("Failed to initialize logger:", err);
+	}
+}else{
+	const { default: Logger } = require('log-ng');
+	logger = new Logger('DateRangeIntervals.js');
+}
 
 /**
  * Creates an array of intervals from the passed date range and implements a

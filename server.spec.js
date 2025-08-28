@@ -25,7 +25,7 @@ describe('DateRangeIntervals', function(){
 		assert.throws(() => new DateRangeIntervals(start, end, interval), Error);
 	});
 
-	it('should return the correct iterator', function() {
+	it('should return the correct iterator', function(){
 		const start = new Date('2024-01-01');
 		const end = new Date('2024-01-05');
 		const interval = 'day';

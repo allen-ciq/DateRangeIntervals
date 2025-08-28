@@ -46,7 +46,7 @@ visitor.subIntervals = true;
 const start = new Date('2024-01-01');
 const end = new Date('2025-01-01');
 const interval = 'quarter';
-const intervals = new DateRangeInterval(start, end, interval);
+const intervals = new DateRangeIntervals(start, end, interval);
 
 intervals.accept(visitor);
 
