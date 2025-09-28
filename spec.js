@@ -1,6 +1,10 @@
 const { assert } = require('chai');
 const { default: Logger } = require('log-ng');
-const { DateRangeIntervals, DateRangeIntervalVisitor } = require('./DateRangeIntervals.js');
+const {
+	DateRangeIntervals,
+	DateRangeInterval,
+	DateRangeIntervalVisitor
+} = require('./DateRangeIntervals.js');
 
 const logger = new Logger('spec.js');
 
@@ -31,10 +35,10 @@ describe('DateRangeIntervals', function(){
 		const intervals = new DateRangeIntervals(start, end, interval);
 
 		const expectedIntervals = [
-			[new Date('2024-01-01T00:00:00Z'), new Date('2024-01-02T00:00:00Z')],
-			[new Date('2024-01-02T00:00:00Z'), new Date('2024-01-03T00:00:00Z')],
-			[new Date('2024-01-03T00:00:00Z'), new Date('2024-01-04T00:00:00Z')],
-			[new Date('2024-01-04T00:00:00Z'), new Date('2024-01-05T00:00:00Z')]
+			new DateRangeInterval( new Date('2024-01-01T00:00:00Z'), new Date('2024-01-02T00:00:00Z'), interval ),
+			new DateRangeInterval( new Date('2024-01-02T00:00:00Z'), new Date('2024-01-03T00:00:00Z'), interval ),
+			new DateRangeInterval( new Date('2024-01-03T00:00:00Z'), new Date('2024-01-04T00:00:00Z'), interval ),
+			new DateRangeInterval( new Date('2024-01-04T00:00:00Z'), new Date('2024-01-05T00:00:00Z'), interval )
 		];
 
 		const generatedIntervals = [];
@@ -93,7 +97,7 @@ describe('DateRangeIntervals', function(){
 
 		assert.strictEqual(intervals.length, 3);
 
-		for(const [intervalStart, intervalEnd] of intervals){
+		for(const {start: intervalStart, end: intervalEnd} of intervals){
 			const diffHours = (intervalEnd.getTime() - intervalStart.getTime()) / 3600000;
 			assert.strictEqual(diffHours, 1, `Interval should be 1 hour, but got ${diffHours} hours`);
 		}
@@ -135,12 +139,13 @@ describe('DateRangeIntervals', function(){
 		const interval = 'quarter';
 		const intervals = new DateRangeIntervals(start, end, interval);
 		const visitor = new DateRangeIntervalVisitor(function(interval){
+			logger.debug(`At depth ${this.depth}`);
 			if(this.depth > 1){
 				logger.trace(`Ending descent at depth ${this.depth}`);
 				return;
 			}
 			logger.debug(`Visiting interval ${this.visitCount} (depth ${this.depth}): ${interval.start.toISOString()} (${interval.start.getTime()}) - ${interval.end.toISOString()} (${interval.end.getTime()})`);
-			this.dates.push([interval.start, interval.end]);
+			this.dates.push([interval.start, interval.end, interval.interval]);
 			this.visitCount++;
 			return true;
 		});
@@ -151,29 +156,30 @@ describe('DateRangeIntervals', function(){
 		await intervals.accept(visitor);
 
 		const expectedIntervals = [
-			[ new Date('2024-01-01T00:00:00.000Z'), new Date('2024-04-01T00:00:00.000Z') ],
-			[ new Date('2024-01-01T00:00:00.000Z'), new Date('2024-02-01T00:00:00.000Z') ],
-			[ new Date('2024-02-01T00:00:00.000Z'), new Date('2024-03-01T00:00:00.000Z') ],
-			[ new Date('2024-03-01T00:00:00.000Z'), new Date('2024-04-01T00:00:00.000Z') ],
-			[ new Date('2024-04-01T00:00:00.000Z'), new Date('2024-07-01T00:00:00.000Z') ],
-			[ new Date('2024-04-01T00:00:00.000Z'), new Date('2024-05-01T00:00:00.000Z') ],
-			[ new Date('2024-05-01T00:00:00.000Z'), new Date('2024-06-01T00:00:00.000Z') ],
-			[ new Date('2024-06-01T00:00:00.000Z'), new Date('2024-07-01T00:00:00.000Z') ],
-			[ new Date('2024-07-01T00:00:00.000Z'), new Date('2024-10-01T00:00:00.000Z') ],
-			[ new Date('2024-07-01T00:00:00.000Z'), new Date('2024-08-01T00:00:00.000Z') ],
-			[ new Date('2024-08-01T00:00:00.000Z'), new Date('2024-09-01T00:00:00.000Z') ],
-			[ new Date('2024-09-01T00:00:00.000Z'), new Date('2024-10-01T00:00:00.000Z') ],
-			[ new Date('2024-10-01T00:00:00.000Z'), new Date('2025-01-01T00:00:00.000Z') ],
-			[ new Date('2024-10-01T00:00:00.000Z'), new Date('2024-11-01T00:00:00.000Z') ],
-			[ new Date('2024-11-01T00:00:00.000Z'), new Date('2024-12-01T00:00:00.000Z') ],
-			[ new Date('2024-12-01T00:00:00.000Z'), new Date('2025-01-01T00:00:00.000Z') ]
+			new DateRangeInterval( new Date('2024-01-01T00:00:00.000Z'), new Date('2024-04-01T00:00:00.000Z'), 'quarter' ),
+			new DateRangeInterval( new Date('2024-01-01T00:00:00.000Z'), new Date('2024-02-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-02-01T00:00:00.000Z'), new Date('2024-03-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-03-01T00:00:00.000Z'), new Date('2024-04-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-04-01T00:00:00.000Z'), new Date('2024-07-01T00:00:00.000Z'), 'quarter' ),
+			new DateRangeInterval( new Date('2024-04-01T00:00:00.000Z'), new Date('2024-05-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-05-01T00:00:00.000Z'), new Date('2024-06-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-06-01T00:00:00.000Z'), new Date('2024-07-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-07-01T00:00:00.000Z'), new Date('2024-10-01T00:00:00.000Z'), 'quarter' ),
+			new DateRangeInterval( new Date('2024-07-01T00:00:00.000Z'), new Date('2024-08-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-08-01T00:00:00.000Z'), new Date('2024-09-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-09-01T00:00:00.000Z'), new Date('2024-10-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-10-01T00:00:00.000Z'), new Date('2025-01-01T00:00:00.000Z'), 'quarter' ),
+			new DateRangeInterval( new Date('2024-10-01T00:00:00.000Z'), new Date('2024-11-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-11-01T00:00:00.000Z'), new Date('2024-12-01T00:00:00.000Z'), 'month' ),
+			new DateRangeInterval( new Date('2024-12-01T00:00:00.000Z'), new Date('2025-01-01T00:00:00.000Z'), 'month' )
 		];
 
 		assert.strictEqual(visitor.visitCount, 16);
 		for(let i = 0; i < visitor.dates.length; i++){
-			const [start, end] = visitor.dates[i];
-			assert.strictEqual(start.getTime(), expectedIntervals[i][0].getTime());
-			assert.strictEqual(end.getTime(), expectedIntervals[i][1].getTime());
+			const [start, end, interval] = visitor.dates[i];
+			assert.strictEqual(start.getTime(), expectedIntervals[i].start.getTime());
+			assert.strictEqual(end.getTime(), expectedIntervals[i].end.getTime());
+			assert.strictEqual(interval, expectedIntervals[i].interval);
 		}
 	});
 });

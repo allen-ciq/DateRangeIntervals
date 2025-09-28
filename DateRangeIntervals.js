@@ -31,8 +31,6 @@ function DateRangeIntervals(start, end, interval){
 	}
 
 	const segments = [];
-	let iStart;
-	let iEnd;
 	const startDate = new Date(start);
 	const endDate = new Date(end);
 	const curDate = new Date(start);
@@ -79,19 +77,12 @@ function DateRangeIntervals(start, end, interval){
 		[Symbol.iterator]: {
 			value: function*(){
 				for(let i = 0; i < segments.length-1; i++){
-					// the idea is to mark the current segment
-					// a note of caution that the interval start/end is only defined while iterating
-					// not so sure this is a good idea; maybe revisit later
-					iStart = segments[i];
-					iEnd = segments[i + 1];
-					yield [iStart, iEnd];
+					yield new DateRangeInterval(segments[i], segments[i + 1], interval);
 				}
-				iStart = undefined;
-				iEnd = undefined;
 			}
 		},
 		end: {
-			get: () => iEnd || endDate
+			get: () => endDate
 		},
 		interval: {
 			get: () => interval
@@ -103,18 +94,17 @@ function DateRangeIntervals(start, end, interval){
 		 * @type {boolean}
 		 */
 		isCongruentPartition: {
-			value: curDate == endDate
+			value: curDate === endDate
 		},
 		/**
 		 * The number of intervals in the date range.
 		 * @type {number}
 		 */
 		length: {
-			// get: () => iStart === undefined ? segments.length-1 : 1
 			get: () => segments.length-1
 		},
 		start: {
-			get: () => iStart || startDate
+			get: () => startDate
 		},
 		/**
 		 * Accepts a visitor function to perform operations on each segment.
@@ -131,17 +121,35 @@ function DateRangeIntervals(start, end, interval){
 				if(!(visitor instanceof DateRangeIntervalVisitor)){
 					throw new Error('Invalid visitor: accepts only DateRangeIntervalVisitor');
 				}
-				for(const [start, end] of this){
-					logger.debug(`visiting ${start.toISOString()} - ${end.toISOString()}`);
-					const subdivide = await visitor.visit(this);
+				for(const interval of this){
+					logger.silly(`visiting ${interval.start.toISOString()} - ${interval.end.toISOString()}`);
+					const subdivide = await visitor.visit(interval);
 					if(subdivide && visitor.subIntervals && lowerInterval){
-						logger.debug(`recursing lower for subinterval: ${lowerInterval} (${start}, ${end})`);
+						logger.debug(`recursing lower for subinterval: ${lowerInterval} (${interval.start}, ${interval.end})`);
 						visitor.depth++;
-						await (new DateRangeIntervals(start, end, lowerInterval)).accept(visitor);
+						await (new DateRangeIntervals(interval.start, interval.end, lowerInterval)).accept(visitor);
 						visitor.depth--;
 					}
 				}
 			}
+		}
+	});
+}
+
+function DateRangeInterval(start, end, interval){
+	if(!new.target){
+		return new DateRangeInterval(...arguments);
+	}
+
+	Object.defineProperties(this, {
+		start: {
+			value: new Date(start)
+		},
+		end: {
+			value: new Date(end)
+		},
+		interval: {
+			value: interval
 		}
 	});
 }
@@ -168,5 +176,6 @@ function DateRangeIntervalVisitor(fn){
 
 module.exports = {
 	DateRangeIntervals,
+	DateRangeInterval,
 	DateRangeIntervalVisitor
 };

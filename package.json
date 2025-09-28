@@ -1,6 +1,6 @@
 {
   "name": "DateRangeIntervals",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "An array of intervals created for a date range which implements a visitor-like pattern",
   "main": "DateRangeIntervals.js",
   "scripts": {

@@ -1,14 +1,13 @@
+const bodyParser = require('body-parser');
 const cors = require('cors');
 const express = require('express');
-const bodyParser = require('body-parser');
 const Logger = require('log-ng');
 const path = require('path');
 
-Logger({logLevel: 'error', logFile: 'testServer.log'});
-const logger = new Logger(path.basename(__filename));
-
 const app = express();
 const router = express.Router();
+Logger({logLevel: 'error', logFile: 'testServer.log'});
+const logger = new Logger(path.basename(__filename));
 
 function processHeaders(req, res, next){
 	logger.info(`${req.method}:${req.originalUrl}\nheaders: ${JSON.stringify(req.headers, null, 2)}\nbody: ${JSON.stringify(req.body, null, 2)}`);
