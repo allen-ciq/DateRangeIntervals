@@ -30,10 +30,25 @@ function DateRangeIntervals(start, end, interval){
 		return new DateRangeIntervals(...arguments);
 	}
 
+	if(!start || !end){
+		throw new Error('Start and end dates required');
+	}
+
 	const segments = [];
 	const startDate = new Date(start);
 	const endDate = new Date(end);
 	const curDate = new Date(start);
+
+	if(isNaN(startDate.getTime())){
+		throw new Error('Invalid start date');
+	}
+	if(isNaN(endDate.getTime())){
+		throw new Error('Invalid end date');
+	}
+	if(startDate >= endDate){
+		throw new Error('Start must be before end');
+	}
+
 	const lowerInterval = {
 		'minute': 'second',
 		'hour': 'minute',
@@ -82,29 +97,34 @@ function DateRangeIntervals(start, end, interval){
 			}
 		},
 		end: {
-			get: () => endDate
+			enumerable: true,
+			value: endDate
 		},
 		interval: {
-			get: () => interval
+			enumerable: true,
+			value: interval
 		},
 		/**
-		 * Indicates whether the collection forms a congruent partition of the
-		 * entire date range.  A congruent partition divides the range into
-		 * segments of equal size, ie. is the final segment a full interval
+		 * Indicates whether the collection of segments partition the date
+		 * range into equal intervals, ie. is the final segment a full
+		 * interval?
+		 *
 		 * @type {boolean}
 		 */
-		isCongruentPartition: {
-			value: curDate === endDate
+		isEquipartition: {
+			value: curDate.getTime() === endDate.getTime()
 		},
 		/**
 		 * The number of intervals in the date range.
 		 * @type {number}
 		 */
 		length: {
-			get: () => segments.length-1
+			enumerable: true,
+			value: segments.length - 1
 		},
 		start: {
-			get: () => startDate
+			enumerable: true,
+			value: startDate
 		},
 		/**
 		 * Accepts a visitor function to perform operations on each segment.
@@ -123,12 +143,19 @@ function DateRangeIntervals(start, end, interval){
 				}
 				for(const interval of this){
 					logger.silly(`visiting ${interval.start.toISOString()} - ${interval.end.toISOString()}`);
-					const subdivide = await visitor.visit(interval);
-					if(subdivide && visitor.subIntervals && lowerInterval){
-						logger.debug(`recursing lower for subinterval: ${lowerInterval} (${interval.start}, ${interval.end})`);
-						visitor.depth++;
-						await (new DateRangeIntervals(interval.start, interval.end, lowerInterval)).accept(visitor);
-						visitor.depth--;
+					try{
+						const subdivide = await visitor.visit(interval);
+						if(subdivide && visitor.subIntervals && lowerInterval){
+							logger.debug(`recursing lower for subinterval: ${lowerInterval} (${interval.start}, ${interval.end})`);
+							try{
+								visitor.depth++;
+								await (new DateRangeIntervals(interval.start, interval.end, lowerInterval)).accept(visitor);
+							}finally{
+								visitor.depth--;
+							}
+						}
+					}catch(err){
+						logger.error(`Visitor error at depth ${visitor.depth} (${interval.interval}) for interval ${interval.start.toISOString()} - ${interval.end.toISOString()}: ${err.message}`);
 					}
 				}
 			}
@@ -157,6 +184,10 @@ function DateRangeInterval(start, end, interval){
 function DateRangeIntervalVisitor(fn){
 	if(!new.target){
 		return new DateRangeIntervalVisitor(...arguments);
+	}
+
+	if(typeof fn !== 'function'){
+		throw new Error('Visitor must be a function');
 	}
 
 	Object.defineProperties(this, {

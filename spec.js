@@ -28,6 +28,26 @@ describe('DateRangeIntervals', function(){
 		assert.throws(() => new DateRangeIntervals(start, end, interval), Error);
 	});
 
+	it('should throw an error if start is after end', function(){
+		const start = new Date('2024-01-05');
+		const end = new Date('2024-01-01');
+		const interval = 'day';
+		assert.throws(() => new DateRangeIntervals(start, end, interval), /Start must be before end/);
+	});
+
+	it('should correctly identify equipartitions', function(){
+		const start = new Date('2024-01-01');
+		const end = new Date('2024-01-06');
+		const equalInterval = 'day';
+		const inequalInterval = 'week';
+
+		let intervals = new DateRangeIntervals(start, end, equalInterval);
+		assert(intervals.isEquipartition);
+
+		intervals = new DateRangeIntervals(start, end, inequalInterval);
+		assert(!intervals.isEquipartition);
+	});
+
 	it('should return the correct iterator', function(){
 		const start = new Date('2024-01-01');
 		const end = new Date('2024-01-05');
@@ -55,7 +75,7 @@ describe('DateRangeIntervals', function(){
 		const interval = 'minute';
 		const intervals = new DateRangeIntervals(start, end, interval);
 		const visitor = new DateRangeIntervalVisitor(function(interval){
-			this.intervals.push([interval.start, interval.end]);
+			this.intervals.push([interval.start, interval.end, interval.interval]);
 		});
 		visitor.intervals = [];
 
@@ -63,27 +83,28 @@ describe('DateRangeIntervals', function(){
 		await intervals.accept(visitor);
 
 		const expected = [
-			[new Date('2024-01-01T12:00:00Z'), new Date('2024-01-01T12:01:00Z')],
-			[new Date('2024-01-01T12:01:00Z'), new Date('2024-01-01T12:02:00Z')],
-			[new Date('2024-01-01T12:02:00Z'), new Date('2024-01-01T12:03:00Z')],
-			[new Date('2024-01-01T12:03:00Z'), new Date('2024-01-01T12:04:00Z')],
-			[new Date('2024-01-01T12:04:00Z'), new Date('2024-01-01T12:05:00Z')],
-			[new Date('2024-01-01T12:05:00Z'), new Date('2024-01-01T12:06:00Z')],
-			[new Date('2024-01-01T12:06:00Z'), new Date('2024-01-01T12:07:00Z')],
-			[new Date('2024-01-01T12:07:00Z'), new Date('2024-01-01T12:08:00Z')],
-			[new Date('2024-01-01T12:08:00Z'), new Date('2024-01-01T12:09:00Z')],
-			[new Date('2024-01-01T12:09:00Z'), new Date('2024-01-01T12:10:00Z')],
-			[new Date('2024-01-01T12:10:00Z'), new Date('2024-01-01T12:11:00Z')],
-			[new Date('2024-01-01T12:11:00Z'), new Date('2024-01-01T12:12:00Z')],
-			[new Date('2024-01-01T12:12:00Z'), new Date('2024-01-01T12:13:00Z')],
-			[new Date('2024-01-01T12:13:00Z'), new Date('2024-01-01T12:14:00Z')],
-			[new Date('2024-01-01T12:14:00Z'), new Date('2024-01-01T12:15:00Z')]
+			[new Date('2024-01-01T12:00:00Z'), new Date('2024-01-01T12:01:00Z'), 'minute'],
+			[new Date('2024-01-01T12:01:00Z'), new Date('2024-01-01T12:02:00Z'), 'minute'],
+			[new Date('2024-01-01T12:02:00Z'), new Date('2024-01-01T12:03:00Z'), 'minute'],
+			[new Date('2024-01-01T12:03:00Z'), new Date('2024-01-01T12:04:00Z'), 'minute'],
+			[new Date('2024-01-01T12:04:00Z'), new Date('2024-01-01T12:05:00Z'), 'minute'],
+			[new Date('2024-01-01T12:05:00Z'), new Date('2024-01-01T12:06:00Z'), 'minute'],
+			[new Date('2024-01-01T12:06:00Z'), new Date('2024-01-01T12:07:00Z'), 'minute'],
+			[new Date('2024-01-01T12:07:00Z'), new Date('2024-01-01T12:08:00Z'), 'minute'],
+			[new Date('2024-01-01T12:08:00Z'), new Date('2024-01-01T12:09:00Z'), 'minute'],
+			[new Date('2024-01-01T12:09:00Z'), new Date('2024-01-01T12:10:00Z'), 'minute'],
+			[new Date('2024-01-01T12:10:00Z'), new Date('2024-01-01T12:11:00Z'), 'minute'],
+			[new Date('2024-01-01T12:11:00Z'), new Date('2024-01-01T12:12:00Z'), 'minute'],
+			[new Date('2024-01-01T12:12:00Z'), new Date('2024-01-01T12:13:00Z'), 'minute'],
+			[new Date('2024-01-01T12:13:00Z'), new Date('2024-01-01T12:14:00Z'), 'minute'],
+			[new Date('2024-01-01T12:14:00Z'), new Date('2024-01-01T12:15:00Z'), 'minute']
 		];
 
 		let count = 0;
-		for(const [intervalStart, intervalEnd] of visitor.intervals){
+		for(const [intervalStart, intervalEnd, interval] of visitor.intervals){
 			assert.strictEqual(intervalStart.getTime(), expected[count][0].getTime());
 			assert.strictEqual(intervalEnd.getTime(), expected[count][1].getTime());
+			assert.strictEqual(interval, expected[count][2]);
 			count++;
 		}
 

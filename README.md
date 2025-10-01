@@ -7,16 +7,16 @@ visitor can choose to subdivide a month and traverse the weeks.
 
 Example:
 ```javascript
-const visitorFn = (interval) => {
-	this.dates.push([interval.start, interval.end]);
-};
-const visitor = new DateRangeIntervalVisitor(visitorFn);
-visitor.dates = [];
-
 const start = new Date('2025-01-01');
 const end = new Date('2025-04-01');
 const interval = 'month';
 const intervals = new DateRangeIntervals(start, end, interval);
+
+const visitorFn = function(interval){
+	this.dates.push([interval.start, interval.end]);
+};
+const visitor = new DateRangeIntervalVisitor(visitorFn);
+visitor.dates = [];
 
 intervals.accept(visitor);
 
@@ -31,7 +31,12 @@ console.log(visitor.dates);
 
 Example with subdivision:
 ```javascript
-const visitorFn = (interval) => {
+const start = new Date('2024-01-01');
+const end = new Date('2025-01-01');
+const interval = 'quarter';
+const intervals = new DateRangeIntervals(start, end, interval);
+
+const visitorFn = function(interval){
 	if(this.depth > 1){
 		logger.debug(`Ending descent at depth ${this.depth}`);
 		return;
@@ -42,11 +47,6 @@ const visitorFn = (interval) => {
 const visitor = new DateRangeIntervalVisitor(visitorFn);
 visitor.dates = [];
 visitor.subIntervals = true;
-
-const start = new Date('2024-01-01');
-const end = new Date('2025-01-01');
-const interval = 'quarter';
-const intervals = new DateRangeIntervals(start, end, interval);
 
 intervals.accept(visitor);
 
@@ -72,5 +72,3 @@ console.log(visitor.dates);
 ] */
 ```
 
-TODO:
- - make lowerInterval part of DateRangeInterval
